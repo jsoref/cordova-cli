@@ -63,7 +63,7 @@ function launchServer(projectRoot, port) {
                 }
             }
             response.write("</ul>");
-            response.write("<h3>Plugins</h3><ul>");
+            response.write('<h3><a href="http://plugins.cordova.io">Plugins</a></h3><ul>');
             var pluginPath = path.join(projectRoot, 'plugins');
             var plugins = cordova_util.findPlugins(pluginPath);
             for (var p in plugins) {
