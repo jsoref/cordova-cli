@@ -129,14 +129,15 @@ function launchServer(projectRoot, port) {
                         response.write("<html><head><title>Directory listing of "+ urlPath + "</title></head>");
                         response.write("<h3>Items in this directory</h3>");
                         var items = fs.readdirSync(filePath);
-                        response.write("<ul>");
+                        response.write("<ul>\n");
                         for (var i in items) {
                             var file = items[i];
                             if (file) {
                                 response.write('<li><a href="'+file+'">'+file+'</a></li>\n');
                             }
                         }
-                        response.write("</ul>");
+                        response.write("</ul>\n");
+                        response.write('<a href="../">Parent Directory</a>');
                         response.end();
                     } else {
                         var mimeType = mime.lookup(filePath);
