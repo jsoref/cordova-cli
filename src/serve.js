@@ -67,7 +67,7 @@ function launchServer(projectRoot, port) {
             var pluginPath = path.join(projectRoot, 'plugins');
             var plugins = cordova_util.findPlugins(pluginPath);
             for (var p in plugins) {
-                response.write("<li>"+plugins[p]+"</li>\n");
+                response.write('<li><a href="plugins/'+plugins[p]+'">'+plugins[p]+"</a></li>\n");
             }
             response.write("</ul>");
             response.write("</body></html>");
@@ -79,6 +79,10 @@ function launchServer(projectRoot, port) {
             return doRoot();
         }
         var platformId = firstSegment[1];
+        if (platformId == 'plugins') {
+            urlPath = urlPath.slice(platformId.length + 1);
+            return doFile(path.join(projectRoot, 'plugins', urlPath));
+        }
         if (!platforms[platformId]) {
             return do404();
         }
