@@ -105,57 +105,60 @@ function launchServer(projectRoot, port) {
             return do404();
         }
 
-        fs.exists(filePath, function(exists) {
-            if (exists) {
-                if (fs.statSync(filePath).isDirectory()) {
-                    index = path.join(filePath, "index.html");
-                    try {
-                        if (fs.statSync(index)) {
-                            filePath = index;
-                        }
-                    } catch (e) {}
-                }
-                if (fs.statSync(filePath).isDirectory()) {
-                    if (!/\/$/.test(urlPath)) {
-                        return do302("/" + platformId + urlPath + "/");
+        function doFile(filePath) {
+            fs.exists(filePath, function(exists) {
+                if (exists) {
+                    if (fs.statSync(filePath).isDirectory()) {
+                        index = path.join(filePath, "index.html");
+                        try {
+                            if (fs.statSync(index)) {
+                                filePath = index;
+                            }
+                        } catch (e) {}
                     }
-                    console.log('200 ' + request.url);
-                    response.writeHead(200, {"Content-Type": "text/html"});
-                    response.write("<html><head><title>Directory listing of "+ urlPath + "</title></head>");
-                    response.write("<h3>Items in this directory</h3>");
-                    var items = fs.readdirSync(filePath);
-                    response.write("<ul>");
-                    for (var i in items) {
-                        var file = items[i];
-                        if (file) {
-                            response.write('<li><a href="'+file+'">'+file+'</a></li>\n');
+                    if (fs.statSync(filePath).isDirectory()) {
+                        if (!/\/$/.test(urlPath)) {
+                            return do302("/" + platformId + urlPath + "/");
                         }
-                    }
-                    response.write("</ul>");
-                    response.end();
-                } else {
-                    var mimeType = mime.lookup(filePath);
-                    var respHeaders = {
-                      'Content-Type': mimeType
-                    };
-                    var readStream = fs.createReadStream(filePath);
+                        console.log('200 ' + request.url);
+                        response.writeHead(200, {"Content-Type": "text/html"});
+                        response.write("<html><head><title>Directory listing of "+ urlPath + "</title></head>");
+                        response.write("<h3>Items in this directory</h3>");
+                        var items = fs.readdirSync(filePath);
+                        response.write("<ul>");
+                        for (var i in items) {
+                            var file = items[i];
+                            if (file) {
+                                response.write('<li><a href="'+file+'">'+file+'</a></li>\n');
+                            }
+                        }
+                        response.write("</ul>");
+                        response.end();
+                    } else {
+                        var mimeType = mime.lookup(filePath);
+                        var respHeaders = {
+                          'Content-Type': mimeType
+                        };
+                        var readStream = fs.createReadStream(filePath);
 
-                    var acceptEncoding = request.headers['accept-encoding'] || '';
-                    if (acceptEncoding.match(/\bgzip\b/)) {
-                        respHeaders['content-encoding'] = 'gzip';
-                        readStream = readStream.pipe(zlib.createGzip());
-                    } else if (acceptEncoding.match(/\bdeflate\b/)) {
-                        respHeaders['content-encoding'] = 'deflate';
-                        readStream = readStream.pipe(zlib.createDeflate());
+                        var acceptEncoding = request.headers['accept-encoding'] || '';
+                        if (acceptEncoding.match(/\bgzip\b/)) {
+                            respHeaders['content-encoding'] = 'gzip';
+                            readStream = readStream.pipe(zlib.createGzip());
+                        } else if (acceptEncoding.match(/\bdeflate\b/)) {
+                            respHeaders['content-encoding'] = 'deflate';
+                            readStream = readStream.pipe(zlib.createDeflate());
+                        }
+                        console.log('200 ' + request.url);
+                        response.writeHead(200, respHeaders);
+                        readStream.pipe(response);
                     }
-                    console.log('200 ' + request.url);
-                    response.writeHead(200, respHeaders);
-                    readStream.pipe(response);
+                } else {
+                    return do404();
                 }
-            } else {
-                return do404();
-            }
-        });
+            });
+        }
+        doFile(filePath);
 
     }).listen(port, undefined, undefined, function (listeningEvent) {
         console.log("Static file server running on port " + port + " (i.e. http://localhost:" + port + ")\nCTRL + C to shut down");
