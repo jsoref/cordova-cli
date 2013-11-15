@@ -73,7 +73,9 @@ function launchServer(projectRoot, port) {
             response.write("</body></html>");
             response.end();
         }
-        var urlPath = url.parse(request.url).pathname;
+        var uri = url.parse(request.url);
+        var params = {'query': uri.query};
+        var urlPath = uri.pathname;
         var firstSegment = /\/(.*?)\//.exec(urlPath);
         if (!firstSegment) {
             return doRoot();
@@ -81,7 +83,7 @@ function launchServer(projectRoot, port) {
         var platformId = firstSegment[1];
         if (platformId == 'plugins') {
             urlPath = urlPath.slice(platformId.length + 1);
-            return doFile(path.join(projectRoot, 'plugins', urlPath));
+            return doFile(path.join(projectRoot, 'plugins', urlPath), params);
         }
         if (!platforms[platformId]) {
             return do404();
@@ -109,7 +111,7 @@ function launchServer(projectRoot, port) {
             return do404();
         }
 
-        function doFile(filePath) {
+        function doFile(filePath, params) {
             fs.exists(filePath, function(exists) {
                 if (exists) {
                     if (fs.statSync(filePath).isDirectory()) {
@@ -133,7 +135,8 @@ function launchServer(projectRoot, port) {
                         for (var i in items) {
                             var file = items[i];
                             if (file) {
-                                response.write('<li><a href="'+file+'">'+file+'</a></li>\n');
+                                var filelink = file;
+                                response.write('<li><a href="'+filelink+'">'+file+'</a></li>\n');
                             }
                         }
                         response.write("</ul>\n");
@@ -145,25 +148,44 @@ function launchServer(projectRoot, port) {
                           'Content-Type': mimeType
                         };
                         var readStream = fs.createReadStream(filePath);
-
-                        var acceptEncoding = request.headers['accept-encoding'] || '';
-                        if (acceptEncoding.match(/\bgzip\b/)) {
-                            respHeaders['content-encoding'] = 'gzip';
-                            readStream = readStream.pipe(zlib.createGzip());
-                        } else if (acceptEncoding.match(/\bdeflate\b/)) {
-                            respHeaders['content-encoding'] = 'deflate';
-                            readStream = readStream.pipe(zlib.createDeflate());
+                        if (params.query) {
+                            var flags = {};
+                            var fragments = params.query.split(";&");
+                            for (var i in fragments) {
+                                var fragment = fragments[i];
+                                var j = fragment.indexOf('=');
+                                if (j > 0) {
+                                    var value = fragment.slice(j+1);
+                                    fragment = fragment.substr(0, j); 
+                                }
+                                if (fragment in flags) {
+                                    var list = flags[fragment];
+                                    list[list.length] = value;
+                                } else {
+                                    flags[fragment] = [value];
+                                }
+                            }
                         }
-                        console.log('200 ' + request.url);
-                        response.writeHead(200, respHeaders);
-                        readStream.pipe(response);
+                        if (true) {
+                            var acceptEncoding = request.headers['accept-encoding'] || '';
+                            if (acceptEncoding.match(/\bgzip\b/)) {
+                                respHeaders['content-encoding'] = 'gzip';
+                                readStream = readStream.pipe(zlib.createGzip());
+                            } else if (acceptEncoding.match(/\bdeflate\b/)) {
+                                respHeaders['content-encoding'] = 'deflate';
+                                readStream = readStream.pipe(zlib.createDeflate());
+                            }
+                            console.log('200 ' + request.url);
+                            response.writeHead(200, respHeaders);
+                            readStream.pipe(response);
+                        }
                     }
                 } else {
                     return do404();
                 }
             });
         }
-        doFile(filePath);
+        doFile(filePath, params);
 
     }).listen(port, undefined, undefined, function (listeningEvent) {
         console.log("Static file server running on port " + port + " (i.e. http://localhost:" + port + ")\nCTRL + C to shut down");
