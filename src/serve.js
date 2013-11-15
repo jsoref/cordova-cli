@@ -136,6 +136,7 @@ function launchServer(projectRoot, port) {
                             var file = items[i];
                             if (file) {
                                 var filelink = file;
+                                filelink += "?useText=1";
                                 response.write('<li><a href="'+filelink+'">'+file+'</a></li>\n');
                             }
                         }
@@ -167,6 +168,12 @@ function launchServer(projectRoot, port) {
                             }
                         }
                         if (true) {
+                            if (params.query && params.query['useText'] && mimeType == 'application/octet-stream') {
+                                var ext = path.extname(filePath||'').split('.')[-1]||'';
+                                if (RegExp("^([ch]p?p?|mm?|)$").test(ext)) {
+                                    respHeaders['Content-Type'] = 'text/plain';
+                                }
+                            }
                             var acceptEncoding = request.headers['accept-encoding'] || '';
                             if (acceptEncoding.match(/\bgzip\b/)) {
                                 respHeaders['content-encoding'] = 'gzip';
