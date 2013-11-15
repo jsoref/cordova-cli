@@ -136,7 +136,11 @@ function launchServer(projectRoot, port) {
                             var file = items[i];
                             if (file) {
                                 var filelink = file;
-                                filelink += "?useText=1";
+                                if (file.search("\.md$") >= 0) {
+                                    filelink += "?toHTML=1";
+                                } else {
+                                    filelink += "?useText=1";
+                                }
                                 response.write('<li><a href="'+filelink+'">'+file+'</a></li>\n');
                             }
                         }
@@ -167,7 +171,25 @@ function launchServer(projectRoot, port) {
                                 }
                             }
                         }
-                        if (true) {
+                        if (flags && flags['toHTML'] && mimeType == 'text/x-markdown') {
+                            mimeType = 'text/html';
+                            respHeaders['Content-Type'] = mimeType;
+                            console.log('200 ' + request.url);
+                            response.writeHead(200, respHeaders);
+                            var marked = require('marked');
+                            var lexer = new marked.Lexer();
+                            readStream.setEncoding('utf8');
+                            readStream.on('data',
+                                function(chunk) {
+                                    response.write(marked.parser(lexer.lex(chunk)));
+                                }
+                            );
+                            readStream.on('end',
+                                function(chunk) {
+                                    response.end();
+                                }
+                            );
+                        } else {
                             if (params.query && params.query['useText'] && mimeType == 'application/octet-stream') {
                                 var ext = path.extname(filePath||'').split('.')[-1]||'';
                                 if (RegExp("^([ch]p?p?|mm?|)$").test(ext)) {
