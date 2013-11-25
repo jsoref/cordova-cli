@@ -83,7 +83,7 @@ config_parser.prototype = {
         }
     },
     update:function() {
-        fs.writeFileSync(this.path, this.doc.write({indent: 4}), 'utf-8');
+        fs.writeFileSync(this.path, "\ufeff" + this.doc.write({indent: 4}), 'utf-8');
     },
     merge_with: function (cfg, platform, clobber) {
         var BLACKLIST = ["platform"],
