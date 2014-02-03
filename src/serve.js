@@ -73,11 +73,12 @@ function launchServer(projectRoot, port) {
             response.end();
         }
         var urlPath = url.parse(request.url).pathname;
-        var firstSegment = /\/(.*?)()(\/.*)/.exec(urlPath);
+        var firstSegment = /\/(.*?)(\.extra|)(\/.*)/.exec(urlPath);
         if (!firstSegment) {
             return doRoot();
         }
         var platformId = firstSegment[1];
+        var extra = firstSegment[2];
         if (!platforms[platformId]) {
             return do404();
         }
@@ -96,6 +97,11 @@ function launchServer(projectRoot, port) {
         } else if (urlPath == '/project.json') {
             processAddRequest(request, response, platformId, projectRoot);
             return;
+        } else if (extra) {
+            if (!parser.serve_extra_style_dir) {
+                return do404();
+            }
+            filePath = path.join(parser.serve_extra_style_dir(), urlPath);
         } else if (/^\/www\//.test(urlPath)) {
             filePath = path.join(parser.www_dir(), urlPath.slice(5));
         } else if (/^\/+[^\/]*$/.test(urlPath)) {
@@ -119,7 +125,8 @@ function launchServer(projectRoot, port) {
                         return do302("/" + platformId + urlPath + "/");
                     }
                     console.log('200 ' + request.url);
-                    response.writeHead(200, {"Content-Type": "text/html"});
+                    var respHeaders = {"Content-Type": "text/html"};
+                    response.writeHead(200, respHeaders);
                     response.write("<html><head><title>Directory listing of "+ urlPath + "</title></head>");
                     response.write("<h3>Items in this directory</h3>");
                     var items = fs.readdirSync(filePath);
@@ -137,6 +144,9 @@ function launchServer(projectRoot, port) {
                     var respHeaders = {
                       'Content-Type': mimeType
                     };
+                    if (parser.serve_extra_style) {
+                        respHeaders['Link'] = '</' + platformId + '.extra/' + parser.serve_extra_style() + '>; rel=stylesheet';
+                    }
                     var readStream = fs.createReadStream(filePath);
 
                     var acceptEncoding = request.headers['accept-encoding'] || '';
