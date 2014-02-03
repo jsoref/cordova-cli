@@ -73,7 +73,7 @@ function launchServer(projectRoot, port) {
             response.end();
         }
         var urlPath = url.parse(request.url).pathname;
-        var firstSegment = /\/(.*?)\//.exec(urlPath);
+        var firstSegment = /\/(.*?)()(\/.*)/.exec(urlPath);
         if (!firstSegment) {
             return doRoot();
         }
@@ -82,7 +82,7 @@ function launchServer(projectRoot, port) {
             return do404();
         }
         // Strip the platform out of the path.
-        urlPath = urlPath.slice(platformId.length + 1);
+        urlPath = firstSegment[3];
 
         try {
             var parser = new platforms[platformId].parser(path.join(projectRoot, 'platforms', platformId));
